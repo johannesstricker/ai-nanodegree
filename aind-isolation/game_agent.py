@@ -4,7 +4,6 @@ and include the results in your report.
 """
 import random
 
-
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
@@ -175,15 +174,15 @@ class MinimaxPlayer(IsolationPlayer):
         if len(legal_moves) == 0:
             return game.utility(self)
 
-        if self.time_left() < self.TIMER_THRESHOLD or depth >= self.search_depth:
+        if depth == 0 and self.time_left() >= self.TIMER_THRESHOLD:
             return self.score(game, self)
 
         utility = next_choice_fn(float('inf'), float('-inf'))
         for move in legal_moves:
             if self.time_left() < self.TIMER_THRESHOLD:
-                return choice_fn(utility, self.score(game, self))
+                return utility
             forecast = game.forecast_move(move)
-            utility = choice_fn(utility, self._minimax_helper(forecast, depth + 1, next_choice_fn, choice_fn))
+            utility = choice_fn(utility, self._minimax_helper(forecast, depth - 1, next_choice_fn, choice_fn))
         return utility
 
     def minimax(self, game, depth):
@@ -234,11 +233,10 @@ class MinimaxPlayer(IsolationPlayer):
         max_utility = float('-inf')
         for move in legal_moves:
             forecast = game.forecast_move(move)
-            utility = self._minimax_helper(forecast, 1, min, max)
+            utility = self._minimax_helper(forecast, depth - 1, min, max)
             if utility > max_utility:
                 best_move = move
                 max_utility = utility
-
             if self.time_left() < self.TIMER_THRESHOLD:
                 break
 
@@ -281,10 +279,22 @@ class AlphaBetaPlayer(IsolationPlayer):
             Board coordinates corresponding to a legal move; may return
             (-1, -1) if there are no available legal moves.
         """
+        # Set timer function.
         self.time_left = time_left
-
-        # TODO: finish this function!
-        raise NotImplementedError
+        # Keep track of the current best move.
+        best_move = (-1, -1)
+        # Iteratively search the tree, increasing the depth after every completed search.
+        search_depth = 1
+        while True:
+            try:
+                # The try/except block will automatically catch the exception
+                # raised when the timer is about to expire.
+                best_move = self.alphabeta(game, search_depth)
+            except SearchTimeout:
+                return best_move
+            search_depth += 1
+        # Return the best move from the last completed search iteration
+        return best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -331,8 +341,74 @@ class AlphaBetaPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
+        # Raise exception in case we timed out.
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
+        # Keep track of current best move and best utility.
+        best_move = (-1, -1)
+        best_utility = float('-inf')
+        # Get all legal moves for current game state.
+        legal_moves = game.get_legal_moves()
+        # Iteratively search the tree, increasing the depth after every completed search.
+        for move in legal_moves:
+            # Check for timeout and raise an exception to be caught by get_move() in case we timed out.
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise SearchTimeout();
+            # Forecast and calculate utility.
+            forecast = game.forecast_move(move)
+            utility = self._min_value(forecast, depth - 1, alpha, beta)
+            # Update upper bound.
+            alpha = max(alpha, utility)
+            # Update best found utility.
+            if utility > best_utility:
+                best_utility = utility
+                best_move = move
+        return best_move
 
-        # TODO: finish this function!
-        raise NotImplementedError
+    def _min_value(self, game, depth, alpha, beta):
+        legal_moves = game.get_legal_moves()
+        # If there are no moves left we reached the end of the game and return the utility.
+        if len(legal_moves) == 0:
+            return game.utility(self)
+        # Return heuristic score if we reached the max depth and haven't timed out.
+        if depth == 0 and self.time_left() >= self.TIMER_THRESHOLD:
+            return self.score(game, self)
+        # Iterate over all possible moves and calculate the utility recursively.
+        best_utility = float('inf')
+        for move in legal_moves:
+            # Raise an exception to be caught by get_move() in case we timed out.
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise SearchTimeout()
+            # Calculate utility for this move and compare it with current best utility.
+            forecast = game.forecast_move(move)
+            best_utility = min(best_utility, self._max_value(forecast, depth - 1, alpha, beta))
+            # Cancel if we find a value that's smaller than beta.
+            if best_utility <= alpha:
+                break
+            # Update alpha.
+            beta = min(beta, best_utility)
+        return best_utility
+
+    def _max_value(self, game, depth, alpha, beta):
+        legal_moves = game.get_legal_moves()
+        # If there are no moves left we reached the end of the game and return the utility.
+        if len(legal_moves) == 0:
+            return game.utility(self)
+        # Return heuristic score if we reached the max depth and haven't timed out.
+        if depth == 0 and self.time_left() >= self.TIMER_THRESHOLD:
+            return self.score(game, self)
+        # Iterate over all possible moves and calculate the utility recursively.
+        best_utility = float('-inf')
+        for move in legal_moves:
+            # Raise an exception to be caught by get_move() in case we timed out.
+            if self.time_left() < self.TIMER_THRESHOLD:
+                raise SearchTimeout()
+            # Calculate utility for this move and compare it with current best utility.
+            forecast = game.forecast_move(move)
+            best_utility = max(best_utility, self._min_value(forecast, depth - 1, alpha, beta))
+            # Cancel if we find a value that's smaller than beta.
+            if best_utility >= beta:
+                break
+            # Update alpha.
+            alpha = max(alpha, best_utility)
+        return best_utility
