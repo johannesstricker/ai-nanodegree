@@ -8,6 +8,119 @@ class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
 
+def reflect_board_vertical(game):
+    reflection = game.copy()
+
+    if reflection._board_state[-1] is not None:
+        row = reflection._board_state[-1] % game.height
+        col = reflection._board_state[-1] // game.height
+        col = game.width - col - 1
+        idx = row + col * game.height
+        reflection._board_state[-1] = idx
+
+    if reflection._board_state[-2] is not None:
+        row = reflection._board_state[-2] % game.height
+        col = reflection._board_state[-2] // game.height
+        col = game.width - col - 1
+        idx = row + col * game.height
+        reflection._board_state[-2] = idx
+
+    for r in range(game.height):
+        for c in range(game.width):
+            idx = r + c * game.height
+            newIdx = r + (game.width - c - 1) * game.height
+            reflection._board_state[newIdx] = game._board_state[idx]
+    return reflection
+
+def reflect_board_horizontal(game):
+    reflection = game.copy()
+
+    if reflection._board_state[-1] is not None:
+        row = reflection._board_state[-1] % game.height
+        col = reflection._board_state[-1] // game.height
+        row = game.height - row - 1
+        idx = row + col * game.height
+        reflection._board_state[-1] = idx
+
+    if reflection._board_state[-2] is not None:
+        row = reflection._board_state[-2] % game.height
+        col = reflection._board_state[-2] // game.height
+        row = game.height - row - 1
+        idx = row + col * game.height
+        reflection._board_state[-2] = idx
+
+    for r in range(game.height):
+        for c in range(game.width):
+            idx = r + c * game.height
+            newIdx = (game.height - r - 1) + c * game.height
+            reflection._board_state[newIdx] = game._board_state[idx]
+    return reflection
+
+def reflect_idx(idx, width, height, vertical, horizontal):
+    if idx is None:
+        return None
+    row = idx % height
+    col = idx // height
+    row = height - row - 1 if horizontal else row
+    col = width - col - 1 if vertical else col
+    return row + col * height
+
+def hash_board_state(game):
+    return hash(tuple(game._board_state))
+
+def hash_board(game):
+    horizontal = reflect_board_horizontal(game)
+    vertical = reflect_board_vertical(game)
+    both = reflect_board_vertical(horizontal)
+    return min([hash_board_state(game), hash_board_state(vertical), hash_board_state(horizontal), hash_board_state(both)])
+
+def compare_games(lhs, rhs):
+    if lhs is None or rhs is None:
+        return False
+
+    vertical = True
+    horizontal = True
+    both = True
+
+    width = lhs.width
+    height = lhs.height
+
+    # Compare player 1 positions.
+    vertical = vertical or (rhs._board_state[-1] == reflect_idx(lhs._board_state[-1], width, height, True, False))
+    horizontal = horizontal or (rhs._board_state[-1] == reflect_idx(lhs._board_state[-1], width, height, False, True))
+    both = both or (rhs._board_state[-1] == reflect_idx(lhs._board_state[-1], width, height, True, True))
+    if not vertical and not horizontal and not both:
+        return False
+
+    # Compare player 2 positions.
+    vertical = vertical or (rhs._board_state[-2] == reflect_idx(lhs._board_state[-2], width, height, True, False))
+    horizontal = horizontal or (rhs._board_state[-2] == reflect_idx(lhs._board_state[-2], width, height, False, True))
+    both = both or (rhs._board_state[-2] == reflect_idx(lhs._board_state[-2], width, height, True, True))
+    if not vertical and not horizontal and not both:
+        return False
+
+    # Compare fields.
+    for idx in range(0, len(lhs._board_state) - 3):
+        idx_v = reflect_idx(idx, width, height, True, False)
+        vertical = vertical and rhs._board_state[idx] == lhs._board_state[idx_v]
+        idx_h = reflect_idx(idx, width, height, False, True)
+        horizontal = horizontal and rhs._board_state[idx] == lhs._board_state[idx_h]
+        idx_b = reflect_idx(idx, width, height, True, True)
+        both = both and rhs._board_state[idx] == lhs._board_state[idx_b]
+        if not vertical and not horizontal and not both:
+            return False
+    return vertical | horizontal | both
+
+def remove_equal_moves(game, moves):
+    # Check if this is the first move to make.
+    if len(moves) == len(game._board_state) - 3:
+        return list(map(lambda x: (x[0] + game.height/2, x[1] + game.width/2), set(map(lambda x: (abs(x[0] - game.height/2), abs(x[1]-game.width/2)), moves))))
+    forecasts = [game.forecast_move(move) for move in moves]
+    for idx_1 in range(1, len(moves)):
+        for idx_2 in range(0, idx_1):
+            if compare_games(forecasts[idx_1], forecasts[idx_2]):
+                moves[idx_1] = None
+    return [move for move in moves if move is not None]
 
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -33,8 +146,9 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    player_legal_moves = game.get_legal_moves(player)
+    opponent_legal_moves = game.get_legal_moves(game.get_opponent(player))
+    return float(len(player_legal_moves) - len(opponent_legal_moves))
 
 
 def custom_score_2(game, player):
@@ -59,8 +173,8 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    player_legal_moves = game.get_legal_moves(player)
+    return float(len(player_legal_moves))
 
 
 def custom_score_3(game, player):
@@ -85,8 +199,8 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    opponent_legal_moves = game.get_legal_moves(game.get_opponent(player))
+    return float(-len(opponent_legal_moves))
 
 
 class IsolationPlayer:
@@ -349,6 +463,8 @@ class AlphaBetaPlayer(IsolationPlayer):
         best_utility = float('-inf')
         # Get all legal moves for current game state.
         legal_moves = game.get_legal_moves()
+        # Keep track of equal boards.
+        known_moves = set()
         # Iteratively search the tree, increasing the depth after every completed search.
         for move in legal_moves:
             # Check for timeout and raise an exception to be caught by get_move() in case we timed out.
@@ -356,6 +472,13 @@ class AlphaBetaPlayer(IsolationPlayer):
                 raise SearchTimeout();
             # Forecast and calculate utility.
             forecast = game.forecast_move(move)
+            # Calculate hash and check if a similar board has already been checked.
+            forecast_hash = hash_board(forecast)
+            if forecast_hash in known_moves:
+                continue
+            else:
+                known_moves.add(forecast_hash)
+            # Calculate utility.
             utility = self._min_value(forecast, depth - 1, alpha, beta)
             # Update upper bound.
             alpha = max(alpha, utility)
@@ -371,16 +494,26 @@ class AlphaBetaPlayer(IsolationPlayer):
         if len(legal_moves) == 0:
             return game.utility(self)
         # Return heuristic score if we reached the max depth and haven't timed out.
-        if depth == 0 and self.time_left() >= self.TIMER_THRESHOLD:
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        elif depth == 0:
             return self.score(game, self)
         # Iterate over all possible moves and calculate the utility recursively.
         best_utility = float('inf')
+        known_moves = set()
         for move in legal_moves:
             # Raise an exception to be caught by get_move() in case we timed out.
             if self.time_left() < self.TIMER_THRESHOLD:
                 raise SearchTimeout()
             # Calculate utility for this move and compare it with current best utility.
             forecast = game.forecast_move(move)
+            # Calculate hash and check if a similar board has already been checked.
+            forecast_hash = hash_board(forecast)
+            if forecast_hash in known_moves:
+                continue
+            else:
+                known_moves.add(forecast_hash)
+            # Calculate utility.
             best_utility = min(best_utility, self._max_value(forecast, depth - 1, alpha, beta))
             # Cancel if we find a value that's smaller than beta.
             if best_utility <= alpha:
@@ -395,16 +528,26 @@ class AlphaBetaPlayer(IsolationPlayer):
         if len(legal_moves) == 0:
             return game.utility(self)
         # Return heuristic score if we reached the max depth and haven't timed out.
-        if depth == 0 and self.time_left() >= self.TIMER_THRESHOLD:
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        elif depth == 0:
             return self.score(game, self)
         # Iterate over all possible moves and calculate the utility recursively.
         best_utility = float('-inf')
+        known_moves = set()
         for move in legal_moves:
             # Raise an exception to be caught by get_move() in case we timed out.
             if self.time_left() < self.TIMER_THRESHOLD:
                 raise SearchTimeout()
             # Calculate utility for this move and compare it with current best utility.
             forecast = game.forecast_move(move)
+            # Calculate hash and check if a similar board has already been checked.
+            forecast_hash = hash_board(forecast)
+            if forecast_hash in known_moves:
+                continue
+            else:
+                known_moves.add(forecast_hash)
+            # Calculate utility.
             best_utility = max(best_utility, self._min_value(forecast, depth - 1, alpha, beta))
             # Cancel if we find a value that's smaller than beta.
             if best_utility >= beta:
