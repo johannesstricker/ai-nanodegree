@@ -146,10 +146,23 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
+    # Punish/reward losing/winning indefinitely.
     player_legal_moves = game.get_legal_moves(player)
+    if len(player_legal_moves) == 0:
+        return float('-inf')
     opponent_legal_moves = game.get_legal_moves(game.get_opponent(player))
-    return float(len(player_legal_moves) - len(opponent_legal_moves))
+    if len(opponent_legal_moves) == 0:
+        return float('inf')
+    # Take normalized error.
+    open_fields = sum(game._board_state[0:-3])
+    score = (len(player_legal_moves) / open_fields) - (len(opponent_legal_moves) / open_fields)
+    return score * distanceToCenter(game, player)
 
+def distanceToCenter(game, player):
+    position = game.get_player_location(player)
+    delta_row = abs(position[0] - game.height / 2)
+    delta_col = abs(position[1] - game.width / 2)
+    return delta_row + delta_col
 
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -173,9 +186,8 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    player_legal_moves = game.get_legal_moves(player)
-    return float(len(player_legal_moves))
-
+    # Try to stay as close the the center as possible.
+    return -(distanceToCenter(game,player) ** 2)
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -199,8 +211,18 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
+    # Punish/reward losing/winning indefinitely.
+    player_legal_moves = game.get_legal_moves(player)
+    if len(player_legal_moves) == 0:
+        return float('-inf')
     opponent_legal_moves = game.get_legal_moves(game.get_opponent(player))
-    return float(-len(opponent_legal_moves))
+    if len(opponent_legal_moves) == 0:
+        return float('inf')
+    # Take squared error.
+    score = float(len(player_legal_moves) - len(opponent_legal_moves))
+    if score < 0:
+        return -(score ** 2)
+    return score ** 2
 
 
 class IsolationPlayer:
@@ -270,7 +292,8 @@ class MinimaxPlayer(IsolationPlayer):
 
         # Initialize the best move so that this function returns something
         # in case the search fails due to timeout
-        best_move = (-1, -1)
+        legal_moves = game.get_legal_moves()
+        best_move = (-1, -1) if len(legal_moves) == 0 else legal_moves[0]
 
         try:
             # The try/except block will automatically catch the exception
@@ -343,7 +366,7 @@ class MinimaxPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         legal_moves = game.get_legal_moves()
-        best_move = (-1, -1)
+        best_move = (-1, -1) if len(legal_moves) == 0 else legal_moves[0]
         max_utility = float('-inf')
         for move in legal_moves:
             forecast = game.forecast_move(move)
@@ -396,17 +419,17 @@ class AlphaBetaPlayer(IsolationPlayer):
         # Set timer function.
         self.time_left = time_left
         # Keep track of the current best move.
-        best_move = (-1, -1)
-        # Iteratively search the tree, increasing the depth after every completed search.
+        legal_moves = game.get_legal_moves()
+        best_move = (-1, -1) if len(legal_moves) == 0 else legal_moves[0]
         search_depth = 1
         while True:
             try:
-                # The try/except block will automatically catch the exception
-                # raised when the timer is about to expire.
+                # Iteratively search the tree, increasing the depth after every completed search.
                 best_move = self.alphabeta(game, search_depth)
+                search_depth += 1
             except SearchTimeout:
+                # print('Max depth searched {}'.format(str(search_depth)))
                 return best_move
-            search_depth += 1
         # Return the best move from the last completed search iteration
         return best_move
 
@@ -455,16 +478,14 @@ class AlphaBetaPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
-        # Raise exception in case we timed out.
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout()
-        # Keep track of current best move and best utility.
-        best_move = (-1, -1)
-        best_utility = float('-inf')
         # Get all legal moves for current game state.
         legal_moves = game.get_legal_moves()
-        # Keep track of equal boards.
-        known_moves = set()
+        # Keep track of current best move and best utility.
+        best_move = (-1, -1) if len(legal_moves) == 0 else legal_moves[0]
+        best_utility = float('-inf')
+        # Check for timeout and raise an exception to be caught by get_move() in case we timed out.
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout();
         # Iteratively search the tree, increasing the depth after every completed search.
         for move in legal_moves:
             # Check for timeout and raise an exception to be caught by get_move() in case we timed out.
@@ -472,86 +493,64 @@ class AlphaBetaPlayer(IsolationPlayer):
                 raise SearchTimeout();
             # Forecast and calculate utility.
             forecast = game.forecast_move(move)
-            # Calculate hash and check if a similar board has already been checked.
-            forecast_hash = hash_board(forecast)
-            if forecast_hash in known_moves:
-                continue
-            else:
-                known_moves.add(forecast_hash)
             # Calculate utility.
             utility = self._min_value(forecast, depth - 1, alpha, beta)
-            # Update upper bound.
-            alpha = max(alpha, utility)
             # Update best found utility.
             if utility > best_utility:
                 best_utility = utility
                 best_move = move
+            # Update upper bound.
+            alpha = max(alpha, best_utility)
         return best_move
 
     def _min_value(self, game, depth, alpha, beta):
+        # Find legal moves.
         legal_moves = game.get_legal_moves()
         # If there are no moves left we reached the end of the game and return the utility.
         if len(legal_moves) == 0:
             return game.utility(self)
-        # Return heuristic score if we reached the max depth and haven't timed out.
+        # Check for timeout.
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
-        elif depth == 0:
+        # Return heuristic score.
+        if depth == 0:
             return self.score(game, self)
         # Iterate over all possible moves and calculate the utility recursively.
         best_utility = float('inf')
-        known_moves = set()
         for move in legal_moves:
-            # Raise an exception to be caught by get_move() in case we timed out.
-            if self.time_left() < self.TIMER_THRESHOLD:
-                raise SearchTimeout()
             # Calculate utility for this move and compare it with current best utility.
             forecast = game.forecast_move(move)
-            # Calculate hash and check if a similar board has already been checked.
-            forecast_hash = hash_board(forecast)
-            if forecast_hash in known_moves:
-                continue
-            else:
-                known_moves.add(forecast_hash)
             # Calculate utility.
             best_utility = min(best_utility, self._max_value(forecast, depth - 1, alpha, beta))
             # Cancel if we find a value that's smaller than beta.
             if best_utility <= alpha:
-                break
+                return best_utility
             # Update alpha.
             beta = min(beta, best_utility)
         return best_utility
 
     def _max_value(self, game, depth, alpha, beta):
+        # Find legal moves.
         legal_moves = game.get_legal_moves()
         # If there are no moves left we reached the end of the game and return the utility.
         if len(legal_moves) == 0:
             return game.utility(self)
-        # Return heuristic score if we reached the max depth and haven't timed out.
+        # Check for timeout.
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
-        elif depth == 0:
+        # Return heuristic score.
+        if depth == 0:
             return self.score(game, self)
         # Iterate over all possible moves and calculate the utility recursively.
         best_utility = float('-inf')
-        known_moves = set()
         for move in legal_moves:
-            # Raise an exception to be caught by get_move() in case we timed out.
-            if self.time_left() < self.TIMER_THRESHOLD:
-                raise SearchTimeout()
             # Calculate utility for this move and compare it with current best utility.
             forecast = game.forecast_move(move)
-            # Calculate hash and check if a similar board has already been checked.
-            forecast_hash = hash_board(forecast)
-            if forecast_hash in known_moves:
-                continue
-            else:
-                known_moves.add(forecast_hash)
             # Calculate utility.
             best_utility = max(best_utility, self._min_value(forecast, depth - 1, alpha, beta))
             # Cancel if we find a value that's smaller than beta.
             if best_utility >= beta:
-                break
+                return best_utility
             # Update alpha.
             alpha = max(alpha, best_utility)
         return best_utility
