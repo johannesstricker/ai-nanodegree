@@ -6,7 +6,7 @@ import pandas as pd
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
-from matplotlib import pyplot as plt
+import seaborn as sns
 
 class Timer:
     def __init__(self, time_limit_ms):
@@ -37,19 +37,6 @@ def createOpeningBook(score_fn):
         print('{}/{} - search depth was {}'.format(idx + 1, len(opponent_moves), player.max_depth_searched))
     print(opening_book)
 
-def plot_corr(df,size=10):
-    '''Function plots a graphical correlation matrix for each pair of columns in the dataframe.
-
-    Input:
-        df: pandas DataFrame
-        size: vertical and horizontal size of the plot'''
-
-    corr = df.corr()
-    fig, ax = plt.subplots(figsize=(size, size))
-    ax.matshow(corr)
-    plt.xticks(range(len(corr.columns)), corr.columns);
-    plt.yticks(range(len(corr.columns)), corr.columns);
-    plt.show()
 
 def recordGameSamples():
     player = sample_players.RandomPlayer()
@@ -57,25 +44,25 @@ def recordGameSamples():
 
     samples = pd.DataFrame({
         'num_moves_made': [],
-        'num_available_moves': [],
+        # 'num_available_moves': [],
         'num_available_moves_norm': [],
-        'num_opponent_moves': [],
+        # 'num_opponent_moves': [],
         'num_opponent_moves_norm': [],
-        'delta_moves': [],
+        # 'delta_moves': [],
         'delta_moves_norm': [],
-        'num_open_fields': [],
+        # 'num_open_fields': [],
         'num_open_fields_norm': [],
         'num_fields': [],
-        'position_row': [],
+        # 'position_row': [],
         'position_row_norm': [],
-        'position_col': [],
+        # 'position_col': [],
         'position_col_norm': [],
-        'delta_center': [],
+        # 'delta_center': [],
         'delta_center_norm': [],
         'game_won': []
     });
 
-    game_count = 10000
+    game_count = 1000
     for i in range(0, game_count):
         # Create a new dataset for the game.
         num_moves_made = []
@@ -139,20 +126,20 @@ def recordGameSamples():
                 game_won = [1 if game._inactive_player == player else 0 for i in range(0, len(num_moves_made))]
                 samples = samples.append(pd.DataFrame({
                     'num_moves_made': num_moves_made,
-                    'num_available_moves': num_available_moves,
+                    # 'num_available_moves': num_available_moves,
                     'num_available_moves_norm': num_available_moves_norm,
-                    'num_opponent_moves': num_opponent_moves,
+                    # 'num_opponent_moves': num_opponent_moves,
                     'num_opponent_moves_norm': num_opponent_moves_norm,
-                    'delta_moves': delta_moves,
+                    # 'delta_moves': delta_moves,
                     'delta_moves_norm': delta_moves_norm,
-                    'num_open_fields': num_open_fields,
+                    # 'num_open_fields': num_open_fields,
                     'num_open_fields_norm': num_open_fields_norm,
                     'num_fields': num_fields,
-                    'position_row': position_row,
+                    # 'position_row': position_row,
                     'position_row_norm': position_row_norm,
-                    'position_col': position_col,
+                    # 'position_col': position_col,
                     'position_col_norm': position_col_norm,
-                    'delta_center': delta_center,
+                    # 'delta_center': delta_center,
                     'delta_center_norm': delta_center_norm,
                     'game_won': game_won
                 }));
@@ -163,8 +150,8 @@ def recordGameSamples():
     # print(samples.head())
 
     corr = samples.drop(labels='game_won', axis=1).corrwith(samples['game_won'])
-    print(corr)
-    # plot_corr(samples)
+    sns.heatmap(pd.DataFrame(corr).transpose(), annot=True)
+    sns.plt.show()
 
 if __name__ == '__main__':
     # createOpeningBook(custom_score)
