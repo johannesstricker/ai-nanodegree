@@ -1,0 +1,135 @@
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass{article}
+
+\usepackage{fancyhdr} % Required for custom headers
+\usepackage{lastpage} % Required to determine the last page for the footer
+\usepackage{extramarks} % Required for headers and footers
+
+% Margins
+\topmargin=-0.45in
+\evensidemargin=0in
+\oddsidemargin=0in
+\textwidth=6.5in
+\textheight=9.0in
+\headsep=0.25in
+
+\linespread{1.1} % Line spacing
+
+% Set up the header and footer
+\pagestyle{fancy}
+\lhead{\authorName} % Top left header
+\chead{\pageTitle} % Top center header
+\rhead{\courseName} % Top right header
+\lfoot{\lastxmark} % Bottom left footer
+\cfoot{} % Bottom center footer
+\rfoot{Page\ \thepage\ of\ \pageref{LastPage}} % Bottom right footer
+\renewcommand\headrulewidth{0.4pt} % Size of the header rule
+\renewcommand\footrulewidth{0.4pt} % Size of the footer rule
+
+%----------------------------------------------------------------------------------------
+%	NAME AND CLASS SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\pageTitle}{Summary: Deep Blue} % Assignment title
+\newcommand{\hmwkDueDate}{Monday,\ September\ 15,\ 2017} % Due date
+\newcommand{\courseName}{Artificial Intelligence Nanodegree} % Course/class
+\newcommand{\authorName}{Johannes Stricker} % Your name
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title{
+\vspace{2in}
+\textmd{\textbf{\courseName:\ \pageTitle}}\\
+\normalsize\vspace{0.1in}\small{Due\ on\ \hmwkDueDate}\\
+\vspace{0.1in}\large{\textit{\hmwkClassInstructor\ \hmwkClassTime}}
+\vspace{3in}
+}
+
+\author{\textbf{\authorName}}
+\date{} % Insert date here if you want it to appear below your name
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+  Deep Blue is a chess machine that was developed at IBM Research and defeated the
+  chess grandmaster Garry Kasparov under tournament conditions in 1997. It is
+  sometimes referred to as 'Deep Blue II', because it is based on an earlier version,
+  the 'Deep Blue I', which had lost to grandmaster Kasparov a year earlier.
+
+  Deep Blue II is designed as a massively parallel system with 30 processors, each
+  featuring 16 chess chips, that can search about 2 million chess positions per second.
+  The processors communicate with each other using the Message Passing Interface
+  (short MPI) standard.
+
+  The machine has a 3-layer architecture. One of the processors works as a master
+  that's responsible for searching the top levels of the game tree. It then
+  delegates further branch exploration to it's sibling processors. These search a
+  few levels deeper, before they pass work on to the chess chips, that explore the
+  last few levels of the tree. The chess chips are no general purpose processing
+  units and therefore can only act as slaves. They consist of three parts: the
+  move generator, the evaluation function and the search control. The option to
+  extend the chess chips through external FPGAs exists, but was never used in practice.
+
+  The move generator is implemented as an 8x8 array of combinatorical logic, which
+  is essentially a representation of a chess board. It has a finite state machine
+  that controls which moves are generated. The chip can compute all possible moves
+  at a time and therefore operates with minimum latency. To improve performance it
+  is preferable to search the moves in a best-first order, which the chip tries to estimate.
+
+  The evaluation function is implemented in Hardware, which on the one hand increases
+  it's speed, but on the other hand decreases the flexibility to adjust features.
+  It is split into a fast and a slow evaluation, to be able to skip an expensive
+  computation when an approximation is good enough. Essentially it is a sum of feature
+  values, that range from very simple to very complex. A feature can be static or
+  dynamic, meaning that it is scaled during the search. The evaluation function can
+  be set up with a total of 8150 parameters and can detect about 8000 features,
+  most of which were designed by hand.
+
+  For the search algorithm a hybrid solution of hardware search for the lower branches
+  and software search for the higher branches is used. The hardware search is
+  implemented directly on the chess chip. It is a fixed depth null-window search,
+  which includes a quiescence search. To achieve a good balance between the more
+  performant hardware search and the more complex software search, the hardware search
+  typically only searches 4 to 5 ply deep.
+  During the hardware search, the host processor can do other work and has to poll
+  the chip to determine when the search has been finished.
+
+  The software search is supposed to be highly selective, meaning that branches
+  that seem to have a high relative utility - among other characteristics - receive
+  credit, which can then be 'cashed in' to examine the branch deeper. A problem
+  with this occurs when a particular branch is the current best branch for both
+  players, in which case both players would accumulate infinite credit and the search
+  would explode. To counteract that, the so called 'dual credit' mechanism reduces
+  one players credit when the other player cashes his credit in.
+  The software search algorithm is implemented as a null-window alpha-beta search.
+  Because the overall search is highly parallelized, it is non-deterministic. This
+  makes debugging much more difficult, but apart from that is not an issue.
+
+  Deep Blue features an opening book that was designed by the hands of four chess
+  grandmasters. It consists of about 4000 positions.
+  In addition to the standard opening book, Deep Blue can also fall back on a large
+  grandmaster game database to create an extended opening book. The idea behind that
+  is to assign values to moves based on a number of factors, e.g. the number of times
+  a move has been played or the strength of the player playing it, and then play
+  the move with the highest value. The extended opening book was used with good
+  success in the matches against Kasparov.
+
+  The chess chips also have access to an endgame database, which includes all chess
+  positions with five or fewer pieces on the board, however these did not play a
+  critical role in the matches against Kasparov.
+
+  Because chess matches are usually played with a time limit, Deep Blue features
+  a time control mechanism. Before each search, two time targets are set: if a
+  reasonable move can be found within the first time limit, that move will be played.
+  Under a few conditions however, Deep Blue will continue to search for a better
+  move, until the second time limit is reached or the conditions can be met. This
+  mechanism ensures that Deep Blue is able to finish a match in the given time,
+  but also take enough time for harder decisions.
+
+\end{document}
