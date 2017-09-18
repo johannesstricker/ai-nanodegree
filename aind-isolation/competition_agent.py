@@ -141,6 +141,9 @@ def num_moves_made(game):
     num_open_fields = len([1 for field in game._board_state[0:-3] if field == game.BLANK])
     return num_fields - num_open_fields
 
+def distance(a, b):
+    return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
@@ -170,7 +173,27 @@ def custom_score(game, player):
 
     own_moves = len(game.get_legal_moves(player))
     opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
-    return float(own_moves - opp_moves)
+    delta_moves = own_moves - 2 * opp_moves;
+    return delta_moves
+
+    own_location = game.get_player_location(player)
+    opp_location = game.get_player_location(game.get_opponent(player))
+    delta_center = 0
+    delta_sided = 0
+    if own_location is not None and opp_location is not None:
+        center = (game.height / 2, game.width / 2)
+        own_center_dist = distance(own_location, center)
+        opp_center_dist = distance(opp_location, center)
+        delta_center = opp_center_dist - own_center_dist
+
+        # Check if we are both on the same vertical side of center.
+        if (own_location[0] < center[0]) == (opp_location[0] < center[0]):
+            delta_sided += abs(center[0] - opp_location[0]) - abs(center[0] - own_location[0])
+        # Check if we are both on the same horizontal side of center.
+        if (own_location[1] < center[1]) == (opp_location[1] < center[1]):
+            delta_sided += abs(center[1] - opp_location[1]) - abs(center[1] - own_location[1])
+
+    return delta_moves / 16 + delta_sided / 9 + delta_center / 9
 
 
 class CustomPlayer:
@@ -237,6 +260,7 @@ class CustomPlayer:
         self.time_left = time_left
         # Keep track of the current best move.
         legal_moves = game.get_legal_moves()
+        legal_moves = remove_equal_moves(game, legal_moves)
         best_move = (-1, -1) if len(legal_moves) == 0 else legal_moves[0]
         search_depth = 1
         while True:
@@ -244,7 +268,7 @@ class CustomPlayer:
                 # Keep track of boards that we already solved.
                 self.transposition_table = {}
                 # Iteratively search the tree, increasing the depth after every completed search.
-                best_move = self.alphabeta(game, search_depth)
+                best_move = self.alphabeta(game, legal_moves, search_depth)
                 self.max_depth_searched = max(self.max_depth_searched, search_depth)
                 search_depth += 1
             except SearchTimeout:
@@ -253,7 +277,7 @@ class CustomPlayer:
         # Return the best move from the last completed search iteration
         return best_move
 
-    def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
+    def alphabeta(self, game, legal_moves, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
         described in the lectures.
 
@@ -300,8 +324,8 @@ class CustomPlayer:
         """
         # Get all legal moves for current game state.
         legal_moves = game.get_legal_moves()
-        # if num_moves_made(game) <= 1:
-        #     legal_moves = remove_equal_moves(game, legal_moves)
+        if num_moves_made(game) <= 1:
+            legal_moves = remove_equal_moves(game, legal_moves)
         # Keep track of current best move and best utility.
         best_move = (-1, -1) if len(legal_moves) == 0 else legal_moves[0]
         best_utility = float('-inf')
@@ -327,9 +351,9 @@ class CustomPlayer:
 
     def _min_value(self, game, depth, alpha, beta):
         # Check if this board is known.
-        game_hash = game.hash()
-        if game_hash in self.transposition_table:
-            return self.transposition_table[game_hash]
+        # game_hash = game.hash()
+        # if game_hash in self.transposition_table:
+        #     return self.transposition_table[game_hash]
         # Find legal moves.
         legal_moves = game.get_legal_moves()
         # If there are no moves left we reached the end of the game and return the utility.
@@ -350,18 +374,18 @@ class CustomPlayer:
             best_utility = min(best_utility, self._max_value(forecast, depth - 1, alpha, beta))
             # Cancel if we find a value that's smaller than beta.
             if best_utility <= alpha:
-                self.transposition_table[game_hash] = best_utility
+                # self.transposition_table[game_hash] = best_utility
                 return best_utility
             # Update alpha.
             beta = min(beta, best_utility)
-        self.transposition_table[game_hash] = best_utility
+        # self.transposition_table[game_hash] = best_utility
         return best_utility
 
     def _max_value(self, game, depth, alpha, beta):
         # Check if this board is known.
-        game_hash = game.hash()
-        if game_hash in self.transposition_table:
-            return self.transposition_table[game_hash]
+        # game_hash = game.hash()
+        # if game_hash in self.transposition_table:
+        #     return self.transposition_table[game_hash]
         # Find legal moves.
         legal_moves = game.get_legal_moves()
         # If there are no moves left we reached the end of the game and return the utility.
@@ -382,9 +406,9 @@ class CustomPlayer:
             best_utility = max(best_utility, self._min_value(forecast, depth - 1, alpha, beta))
             # Cancel if we find a value that's smaller than beta.
             if best_utility >= beta:
-                self.transposition_table[game_hash] = best_utility
+                # self.transposition_table[game_hash] = best_utility
                 return best_utility
             # Update alpha.
             alpha = max(alpha, best_utility)
-        self.transposition_table[game_hash] = best_utility
+        # self.transposition_table[game_hash] = best_utility
         return best_utility

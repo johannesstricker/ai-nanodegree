@@ -10,6 +10,22 @@ __pycache__/
 # C extensions
 *.so
 
+# Latex
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+*.synctex.gz
+*.fdb_latexmk
+*.csv
+
 # Distribution / packaging
 .Python
 env/

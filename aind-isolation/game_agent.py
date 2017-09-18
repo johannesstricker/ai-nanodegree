@@ -8,125 +8,29 @@ class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
 
-def reflect_board_vertical(game):
-    reflection = game.copy()
+def distance(a, b):
+    """Calculate the squared distance between two points a and b.
 
-    if reflection._board_state[-1] is not None:
-        row = reflection._board_state[-1] % game.height
-        col = reflection._board_state[-1] // game.height
-        col = game.width - col - 1
-        idx = row + col * game.height
-        reflection._board_state[-1] = idx
+    Parameters
+    ----------
+    a : tuple(int, int)
+        A location on the game board.
+    b : tuple(int, int)
+        A location on the game board.
 
-    if reflection._board_state[-2] is not None:
-        row = reflection._board_state[-2] % game.height
-        col = reflection._board_state[-2] // game.height
-        col = game.width - col - 1
-        idx = row + col * game.height
-        reflection._board_state[-2] = idx
-
-    for r in range(game.height):
-        for c in range(game.width):
-            idx = r + c * game.height
-            newIdx = r + (game.width - c - 1) * game.height
-            reflection._board_state[newIdx] = game._board_state[idx]
-    return reflection
-
-def reflect_board_horizontal(game):
-    reflection = game.copy()
-
-    if reflection._board_state[-1] is not None:
-        row = reflection._board_state[-1] % game.height
-        col = reflection._board_state[-1] // game.height
-        row = game.height - row - 1
-        idx = row + col * game.height
-        reflection._board_state[-1] = idx
-
-    if reflection._board_state[-2] is not None:
-        row = reflection._board_state[-2] % game.height
-        col = reflection._board_state[-2] // game.height
-        row = game.height - row - 1
-        idx = row + col * game.height
-        reflection._board_state[-2] = idx
-
-    for r in range(game.height):
-        for c in range(game.width):
-            idx = r + c * game.height
-            newIdx = (game.height - r - 1) + c * game.height
-            reflection._board_state[newIdx] = game._board_state[idx]
-    return reflection
-
-def reflect_idx(idx, width, height, vertical, horizontal):
-    if idx is None:
-        return None
-    row = idx % height
-    col = idx // height
-    row = height - row - 1 if horizontal else row
-    col = width - col - 1 if vertical else col
-    return row + col * height
-
-def hash_board_state(game):
-    return hash(tuple(game._board_state))
-
-def hash_board(game):
-    horizontal = reflect_board_horizontal(game)
-    vertical = reflect_board_vertical(game)
-    both = reflect_board_vertical(horizontal)
-    return min([hash_board_state(game), hash_board_state(vertical), hash_board_state(horizontal), hash_board_state(both)])
-
-def compare_games(lhs, rhs):
-    if lhs is None or rhs is None:
-        return False
-
-    vertical = True
-    horizontal = True
-    both = True
-
-    width = lhs.width
-    height = lhs.height
-
-    # Compare player 1 positions.
-    vertical = vertical or (rhs._board_state[-1] == reflect_idx(lhs._board_state[-1], width, height, True, False))
-    horizontal = horizontal or (rhs._board_state[-1] == reflect_idx(lhs._board_state[-1], width, height, False, True))
-    both = both or (rhs._board_state[-1] == reflect_idx(lhs._board_state[-1], width, height, True, True))
-    if not vertical and not horizontal and not both:
-        return False
-
-    # Compare player 2 positions.
-    vertical = vertical or (rhs._board_state[-2] == reflect_idx(lhs._board_state[-2], width, height, True, False))
-    horizontal = horizontal or (rhs._board_state[-2] == reflect_idx(lhs._board_state[-2], width, height, False, True))
-    both = both or (rhs._board_state[-2] == reflect_idx(lhs._board_state[-2], width, height, True, True))
-    if not vertical and not horizontal and not both:
-        return False
-
-    # Compare fields.
-    for idx in range(0, len(lhs._board_state) - 3):
-        idx_v = reflect_idx(idx, width, height, True, False)
-        vertical = vertical and rhs._board_state[idx] == lhs._board_state[idx_v]
-        idx_h = reflect_idx(idx, width, height, False, True)
-        horizontal = horizontal and rhs._board_state[idx] == lhs._board_state[idx_h]
-        idx_b = reflect_idx(idx, width, height, True, True)
-        both = both and rhs._board_state[idx] == lhs._board_state[idx_b]
-        if not vertical and not horizontal and not both:
-            return False
-    return vertical | horizontal | both
-
-def remove_equal_moves(game, moves):
-    # Check if this is the first move to make.
-    if len(moves) == len(game._board_state) - 3:
-        return list(map(lambda x: (x[0] + game.height/2, x[1] + game.width/2), set(map(lambda x: (abs(x[0] - game.height/2), abs(x[1]-game.width/2)), moves))))
-    forecasts = [game.forecast_move(move) for move in moves]
-    for idx_1 in range(1, len(moves)):
-        for idx_2 in range(0, idx_1):
-            if compare_games(forecasts[idx_1], forecasts[idx_2]):
-                moves[idx_1] = None
-    return [move for move in moves if move is not None]
+    Returns
+    -------
+    float
+        The squared distance between a and b.
+    """
+    return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
 
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
-    This should be the best heuristic function for your project submission.
+    Returns the difference between the number of available moves for player and
+    his opponent.
 
     Note: this function should be called from within a Player instance as
     `self.score()` -- you should not need to call this function directly.
@@ -146,28 +50,25 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # Punish/reward losing/winning indefinitely.
-    player_legal_moves = game.get_legal_moves(player)
-    if len(player_legal_moves) == 0:
-        return float('-inf')
-    opponent_legal_moves = game.get_legal_moves(game.get_opponent(player))
-    if len(opponent_legal_moves) == 0:
-        return float('inf')
-    # Take normalized error.
-    open_fields = sum(game._board_state[0:-3])
-    score = (len(player_legal_moves) / open_fields) - (len(opponent_legal_moves) / open_fields)
-    return score * distanceToCenter(game, player)
+    if game.is_loser(player):
+        return float("-inf")
 
-def distanceToCenter(game, player):
-    position = game.get_player_location(player)
-    delta_row = abs(position[0] - game.height / 2)
-    delta_col = abs(position[1] - game.width / 2)
-    return delta_row + delta_col
+    if game.is_winner(player):
+        return float("inf")
+
+    # Return the difference between the number of available moves.
+    own_moves = len(game.get_legal_moves(player))
+    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    delta_moves = own_moves - 2 * opp_moves;
+    return delta_moves
 
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
+    Returns the difference between the player's and his opponent's distance to the
+    board's center.
+
     Note: this function should be called from within a Player instance as
     `self.score()` -- you should not need to call this function directly.
 
@@ -186,8 +87,23 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # Try to stay as close the the center as possible.
-    return -(distanceToCenter(game,player) ** 2)
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    # Get player and opponent location.
+    own_location = game.get_player_location(player)
+    opp_location = game.get_player_location(game.get_opponent(player))
+    if own_location is None or opp_location is None:
+        return 0
+
+    # Calculate the distance between the player's positions and the board's center.
+    center = (game.height / 2, game.width / 2)
+    own_center_dist = distance(own_location, center)
+    opp_center_dist = distance(opp_location, center)
+    return opp_center_dist - own_center_dist
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -211,19 +127,30 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # Punish/reward losing/winning indefinitely.
-    player_legal_moves = game.get_legal_moves(player)
-    if len(player_legal_moves) == 0:
-        return float('-inf')
-    opponent_legal_moves = game.get_legal_moves(game.get_opponent(player))
-    if len(opponent_legal_moves) == 0:
-        return float('inf')
-    # Take squared error.
-    score = float(len(player_legal_moves) - len(opponent_legal_moves))
-    if score < 0:
-        return -(score ** 2)
-    return score ** 2
+    if game.is_loser(player):
+        return float("-inf")
 
+    if game.is_winner(player):
+        return float("inf")
+
+    # Get player and opponent location.
+    own_location = game.get_player_location(player)
+    opp_location = game.get_player_location(game.get_opponent(player))
+    if own_location is None or opp_location is None:
+        return 0
+
+    # Calculate the distance between the player's positions and the board's center.
+    center = (game.height / 2, game.width / 2)
+    value = 0
+    # Check if we are both on the same vertical side of center.
+    if (own_location[0] < center[0]) == (opp_location[0] < center[0]):
+        # Add the difference between the players' distances to the board's center on the vertical axis.
+        value += abs(center[0] - opp_location[0]) - abs(center[0] - own_location[0])
+    # Check if we are both on the same horizontal side of center.
+    if (own_location[1] < center[1]) == (opp_location[1] < center[1]):
+        # Add the difference between the players' distances to the board's center on the horizontal axis.
+        value += abs(center[1] - opp_location[1]) - abs(center[1] - own_location[1])
+    return value
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
