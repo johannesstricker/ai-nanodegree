@@ -57,10 +57,12 @@ def custom_score(game, player):
         return float("inf")
 
     # Return the difference between the number of available moves.
+    # The opponents moves are scaled by two, to punish him more when he
+    # has zero moves left.
     own_moves = len(game.get_legal_moves(player))
     opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
     delta_moves = own_moves - 2 * opp_moves;
-    return delta_moves
+    return float(delta_moves)
 
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -108,6 +110,9 @@ def custom_score_2(game, player):
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
+
+    Returns a score describing how much either player has been pushed onto one
+    side of the board.
 
     Note: this function should be called from within a Player instance as
     `self.score()` -- you should not need to call this function directly.
@@ -228,24 +233,53 @@ class MinimaxPlayer(IsolationPlayer):
             return self.minimax(game, self.search_depth)
 
         except SearchTimeout:
-            pass  # Handle any actions required after timeout as needed
+            return best_move
 
         # Return the best move from the last completed search iteration
         return best_move
 
     def _minimax_helper(self, game, depth, choice_fn, next_choice_fn):
+        """ A helper function to the minimax function. This is essentially the
+        minvalue and maxvalue function combined.
+
+        Parameters
+        ----------
+        game : 'isolation.Board'
+            An instance of 'isolation.Board' encoding the current state of the game.
+
+        depth: integer
+            The current depth in the game tree.
+
+        choice_fn: callable
+            This should be 'min' if this is called as minvalue and 'max' otherwise.
+
+        next_choice_fn: callable
+            This should be 'max' if this is called as minvalue and 'min' otherwise.
+
+        Returns
+        -------
+        float
+            The value of this node in the game tree.
+        """
+
         legal_moves = game.get_legal_moves()
+        # If this is a leaf node, return the game's utility.
         if len(legal_moves) == 0:
             return game.utility(self)
 
+        # If we reached the maximum depth or timed out, return the heuristic score.
         if depth == 0 and self.time_left() >= self.TIMER_THRESHOLD:
             return self.score(game, self)
 
+        # Initialize the utility to an extremum.
         utility = next_choice_fn(float('inf'), float('-inf'))
         for move in legal_moves:
+            # If we timed out, return current best utility.
             if self.time_left() < self.TIMER_THRESHOLD:
                 return utility
             forecast = game.forecast_move(move)
+            # Traverse down the tree to calculate utility for this node.
+            # choice_fn and next_choice_fn should be swapped here.
             utility = choice_fn(utility, self._minimax_helper(forecast, depth - 1, next_choice_fn, choice_fn))
         return utility
 
@@ -288,21 +322,26 @@ class MinimaxPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
-        # TODO: finish this function!
+        # Check if we timed out.
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
+        # Initialize the current best move.
         legal_moves = game.get_legal_moves()
         best_move = (-1, -1) if len(legal_moves) == 0 else legal_moves[0]
+        # Initialize the max utility to an extremum.
         max_utility = float('-inf')
         for move in legal_moves:
             forecast = game.forecast_move(move)
+            # Calculate the utility by traversing down the tree.
             utility = self._minimax_helper(forecast, depth - 1, min, max)
+            # Update best utility.
             if utility > max_utility:
                 best_move = move
                 max_utility = utility
+            # Check if we timed out.
             if self.time_left() < self.TIMER_THRESHOLD:
-                break
+                raise SearchTimeout()
 
         return best_move
 
@@ -348,14 +387,15 @@ class AlphaBetaPlayer(IsolationPlayer):
         # Keep track of the current best move.
         legal_moves = game.get_legal_moves()
         best_move = (-1, -1) if len(legal_moves) == 0 else legal_moves[0]
+        # Initialize the search depth to level 1.
         search_depth = 1
         while True:
+            # Use a try..catch.. block to catch the Timeout exceptions.
             try:
-                # Iteratively search the tree, increasing the depth after every completed search.
+                # Iteratively search the tree, increasing the depth after every completed search (iterative deepening).
                 best_move = self.alphabeta(game, search_depth)
                 search_depth += 1
             except SearchTimeout:
-                # print('Max depth searched {}'.format(str(search_depth)))
                 return best_move
         # Return the best move from the last completed search iteration
         return best_move

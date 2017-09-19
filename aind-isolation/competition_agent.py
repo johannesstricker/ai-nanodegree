@@ -6,7 +6,6 @@ champions) in a tournament.
 """
 import random
 
-
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
@@ -221,8 +220,8 @@ class CustomPlayer:
         is generally sufficient.
     """
 
-    def __init__(self, data=None, timeout=1.):
-        self.score = custom_score
+    def __init__(self, data=None, timeout=10., score_fn=custom_score):
+        self.score = score_fn
         self.time_left = None
         self.TIMER_THRESHOLD = timeout
         self.max_depth_searched = 0
