@@ -75,27 +75,28 @@ number of available moves to villain. The number of villain's moves is multiplie
 by two, in order to punish him harder for having zero available moves. This function
 intuitively makes sense, because it accurately describes hero's goal of the game: minimizing
 villains moves while still being able to move himself. It has had the best overall
-performance and therefore has been chosen as the first score function.
+performance wth a 70.9\% win rate and therefore has been chosen as the primary score function.
 
 \subsection{Custom$_2$}
 Returns the difference between hero's squared distance to the board's center and villain's
 squared distance to the center. In general we have most options to maneuver the board when
 we occupy the center square, which is why this seems to be a reasonable heuristic to test.
-It scored only a little worse than than the 1st score function and this could be due to
-variance, however based on the knowledge we had it seemed reasonable to choose this as
-number two.
+With a 66.1\% win rate it scored only a little worse than than the 1st score function and this could be due to
+variance, however based on the knowledge we have it seems reasonable to choose this as
+the secondary score function.
 
 \subsection{Custom$_3$}
 Returns a score that describes how much either player has been pushed onto one side of the
 board. It is calculated by first checking if both players are positioned on any same side
 of the board and if so, the distance to the boards center for the player closest to it is
 taken. This function tries to mimic the strategy of pushing a player to one side of the board.
-However since players don't move in straight lines, but in an L-shape instead this is harder
-to do, which is probably why this function did not perform as well as was hoped. That's why
-it has been chosen as number three.
+However since players don't move in straight lines, but in an L-shape instead, this is harder
+to do, which is probably why this function did not perform as well as was hoped. With 65\% it
+performed worst among the three chosen score functions. It is also less comprehensable and
+therefore ranks third.
 
 \subsection{Results}
-The Alphabeta agent has been tested in a tournament with each of the score functions
+The Alphabeta agent has been tested in a tournament with each of the score heuristics
 against seven other players. There have been 100 fair matches against each of those
 agents. The results are presented below.
 
@@ -114,6 +115,11 @@ agents. The results are presented below.
       Win Rate       & 70.9\%       & 66.1\%        & 65.0\%      \\ \hline
   \end{tabular}
 \end{center}
+
+As mentioned, the Custom$_1$ function had the best results against all agents. It only ties against
+'AB Improved', because that agent uses the same scoring heuristic. It is also a very simple to understand,
+yet meaningful heuristic, since it reflects the overall goal of the game.
+That's why it is the recommended scoring function.
 
 \subsection{Conclusion}
 The overall performance looks promising with a $70.9\%$ win rate for the best agent,
