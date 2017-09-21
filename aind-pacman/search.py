@@ -108,10 +108,6 @@ def depthFirstSearch(problem):
   print "Start's successors:", problem.getSuccessors(problem.getStartState())
   """
   "*** YOUR CODE HERE ***"
-  successors = problem.getSuccessors(problem.getStartState())
-  print successors
-  print problem.getSuccessors(successors[0][0])
-
   return depthFirstSearchHelper(problem, set())
 
 def breadthFirstSearchHelper(problem, currentCost, frontier, explored, actions):
@@ -133,14 +129,16 @@ def breadthFirstSearchHelper(problem, currentCost, frontier, explored, actions):
     # are not already in there.
     successors = problem.getSuccessors(problem.getStartState())
     for s in successors:
-        frontier.append( (s[0], actions + [s[1]], currentCost + s[2]) )
+        # Cost increases by one, because we require one more step to reach that node.
+        frontier.append( (s[0], actions + [s[1]], currentCost + 1) )
     # Sort the frontier lowest cost first.
     frontier = sorted(frontier, key=lambda x: x[2])
     # Take the first element from frontier that is not in explored and search that.
     while True:
         # If there is no valid successor there is no path to goal and we return False.
         if len(frontier) == 0:
-            return False
+            raise Exception, 'No valid path found.'
+            return []
         node = frontier.pop(0)
         if node[0] not in explored:
             break
@@ -159,10 +157,49 @@ def breadthFirstSearch(problem):
   "*** YOUR CODE HERE ***"
   return breadthFirstSearchHelper(problem, 0, [], set(), [])
 
+def uniformCostSearchHelper(problem, currentCost, frontier, explored, actions):
+    """
+    Params
+    ------
+    frontier : [((int, int), int)]
+    A list containing a tuple with the destination as the first element and the
+    total cost to reach that destination as the second element.
+
+    explored : set((int, int))
+    A set containing all destinations that have already been visited.
+    """
+    # If we reached our goal, no more moves are necessary. Therefore we return an
+    # empty list.
+    if problem.isGoalState(problem.getStartState()):
+        return actions
+    # Get all neighbors for the current node and add them to the frontier if they
+    # are not already in there.
+    successors = problem.getSuccessors(problem.getStartState())
+    for s in successors:
+        # Cost increases by the cost amount associated with that path.
+        frontier.append( (s[0], actions + [s[1]], currentCost + s[2]) )
+    # Sort the frontier lowest cost first.
+    frontier = sorted(frontier, key=lambda x: x[2])
+    # Take the first element from frontier that is not in explored and search that.
+    while True:
+        # If there is no valid successor there is no path to goal and we return False.
+        if len(frontier) == 0:
+            raise Exception, 'No valid path found.'
+            return []
+        node = frontier.pop(0)
+        if node[0] not in explored:
+            break
+    # Set the node as the new problem's start state.
+    problem.startState = node[0]
+    # Add it to the set of explored nodes, so we don't visit it twice.
+    explored.add(node[0])
+    # And search further down.
+    return uniformCostSearchHelper(problem, node[2], frontier, explored, node[1])
+
 def uniformCostSearch(problem):
   "Search the node of least total cost first. "
   "*** YOUR CODE HERE ***"
-  util.raiseNotDefined()
+  return uniformCostSearchHelper(problem, 0, [], set(), [])
 
 def nullHeuristic(state, problem=None):
   """
@@ -171,10 +208,49 @@ def nullHeuristic(state, problem=None):
   """
   return 0
 
+def aStarSearchHelper(problem, currentCost, frontier, explored, actions, heuristic):
+    """
+    Params
+    ------
+    frontier : [((int, int), int)]
+    A list containing a tuple with the destination as the first element and the
+    total cost to reach that destination as the second element.
+
+    explored : set((int, int))
+    A set containing all destinations that have already been visited.
+    """
+    # If we reached our goal, no more moves are necessary. Therefore we return an
+    # empty list.
+    if problem.isGoalState(problem.getStartState()):
+        return actions
+    # Get all neighbors for the current node and add them to the frontier if they
+    # are not already in there.
+    successors = problem.getSuccessors(problem.getStartState())
+    for s in successors:
+        # Cost increases by the cost amount associated with that path.
+        frontier.append( (s[0], actions + [s[1]], currentCost + s[2]) )
+    # Sort the frontier lowest cost first.
+    frontier = sorted(frontier, key=lambda x: heuristic(x[0], problem))
+    # Take the first element from frontier that is not in explored and search that.
+    while True:
+        # If there is no valid successor there is no path to goal and we return False.
+        if len(frontier) == 0:
+            raise Exception, 'No valid path found.'
+            return []
+        node = frontier.pop(0)
+        if node[0] not in explored:
+            break
+    # Set the node as the new problem's start state.
+    problem.startState = node[0]
+    # Add it to the set of explored nodes, so we don't visit it twice.
+    explored.add(node[0])
+    # And search further down.
+    return aStarSearchHelper(problem, node[2], frontier, explored, node[1], heuristic)
+
 def aStarSearch(problem, heuristic=nullHeuristic):
   "Search the node that has the lowest combined cost and heuristic first."
   "*** YOUR CODE HERE ***"
-  util.raiseNotDefined()
+  return aStarSearchHelper(problem, 0, [], set(), [], heuristic)
 
 
 # Abbreviations
