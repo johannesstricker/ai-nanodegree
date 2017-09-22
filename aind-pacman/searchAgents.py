@@ -305,10 +305,10 @@ class CornersProblem(search.SearchProblem):
         nextx, nexty = int(x + dx), int(y + dy)
         hitsWall = self.walls[nextx][nexty]
         if not hitsWall:
-            corners = state[1]
-            if (nextx,nexty) in self.corners and (nextx,nexty) not in corners:
-                corners = corners + (nextx,nexty)
-            nextState = ( (nextx,nexty), corners )
+            corners = set(state[1])
+            corners.add((nextx, nexty))
+            corners = tuple(corners.intersection(self.corners))
+            nextState = ( (nextx, nexty), corners )
             successors.append( (nextState, action, 1) )
     self._expanded += 1
     return successors
@@ -326,6 +326,7 @@ class CornersProblem(search.SearchProblem):
       if self.walls[x][y]: return 999999
     return len(actions)
 
+from math import sqrt
 
 def cornersHeuristic(state, problem):
   """
@@ -343,8 +344,24 @@ def cornersHeuristic(state, problem):
   corners = problem.corners # These are the corner coordinates
   walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
-  "*** YOUR CODE HERE ***"
-  return 0 # Default to trivial solution
+  def difference(a, b):
+      return (a[0] - b[0], a[1] - b[1])
+
+  def distancePairwise(a, b):
+      delta = difference(a, b)
+      return abs(delta[0]) + abs(delta[1])
+
+  # Calculate the distance to the closest corner and sum that with the minimum distance
+  # to travel around the board starting from that corner.
+  distance = 0
+  location = state[0]
+  unexploredCorners = [c for c in corners if c not in state[1]]
+  while len(unexploredCorners) > 0:
+      unexploredCorners = sorted(unexploredCorners, key=lambda c: distancePairwise(location, c))
+      corner = unexploredCorners.pop(0)
+      distance += distancePairwise(corner, location)
+      location = corner
+  return distance
 
 class AStarCornersAgent(SearchAgent):
   "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -433,9 +450,24 @@ def foodHeuristic(state, problem):
     problem.heuristicInfo['wallCount'] = problem.walls.count()
   Subsequent calls to this heuristic can access problem.heuristicInfo['wallCount']
   """
+
+  def difference(a, b):
+      return (a[0] - b[0], a[1] - b[1])
+
+  def distancePairwise(a, b):
+    delta = difference(a, b)
+    return abs(delta[0]) + abs(delta[1])
+
   position, foodGrid = state
-  "*** YOUR CODE HERE ***"
-  return 0
+  foodPositions = foodGrid.asList()
+  if len(foodPositions) == 0:
+      return 0
+
+  foodPositionsSorted = sorted(foodPositions, key=lambda food: food[0] + food[1])
+  delta = distancePairwise(foodPositionsSorted[0], foodPositionsSorted[-1])
+  delta += min(distancePairwise(position, foodPositionsSorted[0]),
+               distancePairwise(position, foodPositionsSorted[-1]))
+  return delta
 
 class ClosestDotSearchAgent(SearchAgent):
   "Search for all food using a sequence of searches"
@@ -461,9 +493,8 @@ class ClosestDotSearchAgent(SearchAgent):
     food = gameState.getFood()
     walls = gameState.getWalls()
     problem = AnyFoodSearchProblem(gameState)
+    return search.breadthFirstSearch(problem)
 
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
 
 class AnyFoodSearchProblem(PositionSearchProblem):
   """
@@ -484,7 +515,6 @@ class AnyFoodSearchProblem(PositionSearchProblem):
     "Stores information from the gameState.  You don't need to change this."
     # Store the food for later reference
     self.food = gameState.getFood()
-
     # Store info for the PositionSearchProblem (no need to change this)
     self.walls = gameState.getWalls()
     self.startState = gameState.getPacmanPosition()
@@ -497,9 +527,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
     that will complete the problem definition.
     """
     x,y = state
-
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return self.food[x][y]
 
 ##################
 # Mini-contest 1 #

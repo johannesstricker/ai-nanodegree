@@ -83,12 +83,12 @@ def searchHelper(problem, frontier):
         # If it has been explored already, skip it.
         if node[0] in explored:
             continue
+        # Otherwise add it to the set of explored nodes.
+        explored.add(node[0])
         # If it's the goal state, then return the associated action list.
         if problem.isGoalState(node[0]):
             return node[1]
-        # Otherwise add it to the set of explored nodes.
-        explored.add(node[0])
-        # And add it's children to the frontier.
+        # Otherwise add it's children to the frontier.
         successors = problem.getSuccessors(node[0])
         for s in successors:
             # Create an entry with the new state, the action appended to the list
@@ -114,7 +114,6 @@ def depthFirstSearch(problem):
   print "Is the start a goal?", problem.isGoalState(problem.getStartState())
   print "Start's successors:", problem.getSuccessors(problem.getStartState())
   """
-  "*** YOUR CODE HERE ***"
   frontier = util.Stack()
   return searchHelper(problem, frontier)
 
@@ -123,13 +122,11 @@ def breadthFirstSearch(problem):
   Search the shallowest nodes in the search tree first.
   [2nd Edition: p 73, 3rd Edition: p 82]
   """
-  "*** YOUR CODE HERE ***"
   frontier = util.Queue()
   return searchHelper(problem, frontier)
 
 def uniformCostSearch(problem):
   "Search the node of least total cost first. "
-  "*** YOUR CODE HERE ***"
   frontier = util.PriorityQueueWithFunction(lambda item: item[2])
   return searchHelper(problem, frontier)
 
@@ -142,8 +139,7 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
   "Search the node that has the lowest combined cost and heuristic first."
-  "*** YOUR CODE HERE ***"
-  frontier = util.PriorityQueueWithFunction(lambda item: heuristic(item[0], problem))
+  frontier = util.PriorityQueueWithFunction(lambda item: item[2] + heuristic(item[0], problem))
   return searchHelper(problem, frontier)
 
 
