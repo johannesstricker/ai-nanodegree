@@ -15,3 +15,8 @@ Using the minimax algorithm with alpha-beta pruning.
 Using 'Breadth First Search', 'Uniform Cost Search' and 'A* Search'.
 
 <img src="aind-pacman/pacman.gif" width="400">
+
+## Lab 02: Travelling Salesmen
+Using 'Simulated Annealing' to approximate a solution.
+
+<img src="aind-simulated-annealing/solution.png" width="400">
