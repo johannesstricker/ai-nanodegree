@@ -20,3 +20,8 @@ Using 'Breadth First Search', 'Uniform Cost Search' and 'A* Search'.
 Using 'Simulated Annealing' to approximate a solution.
 
 <img src="aind-simulated-annealing/solution.png" width="400">
+
+## Lab 03: N-Queens
+Using 'Constraint Satisfaction'.
+
+<img src="aind-constraint-satisfaction/solution.png" width="400">
