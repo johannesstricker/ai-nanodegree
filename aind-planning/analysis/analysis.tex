@@ -13,7 +13,7 @@
     \pagestyle{fancy}
     \fancyhf{}
     \rhead{Johannes Stricker}
-    \lhead{Artificial Intelligence: Create A Domain-Independent Planner}
+    \lhead{Artificial Intelligence: Create A Domain-Independent Planner - Heuristic Analysis}
     \cfoot{\thepage}
 
 \begin{document}
@@ -23,21 +23,26 @@ Three non-heuristic searches have been compared: Breadth First Search, Depth Fir
 Search and Uniform Cost Search. From these three only Breadth First Search and Uniform
 Cost Search were able to find optimal solutions for all three problems. Depth
 First Search resulted in longer plans than necessary, which was to be expected given
-the nature of how the search algorithm works. The benefit of Depth First Search
+the nature of how the search algorithm works. Because it searches depth first and returns
+the first solution found, it will usually be a solution that includes many unnecessary
+steps. The benefit of Depth First Search
 was instead how quickly it found a solution, which became especially evident for problems
 two and three, where it was on average 50 times faster than the other two non-heuristic
 searches. \\
 For the given problems it makes sense to spend a little more time on planning,
-because making unnecessary plane flights would be more costly. However given a planning
-problem for which a few unnecessary steps are cheap and planning time is crucial
-one might consider using Depth First Search instead.
+because making unnecessary plane flights would be more costly. Therefore one should choose
+Breadth First Search or Uniform Cost Search if one has to choose from a non-heuristic
+search method. However given a planning problem for which a few unnecessary steps are
+cheap and planning time is crucial one might consider using Depth First Search instead.
 
 \section*{Heuristic Search Analysis}
 Both heuristic searches were able to find optimal solutions to all problems. A-Star
 Search with the 'Ignore Preconditions' heuristic was almost 20 times faster on average
 than with the 'Levelsum' heuristic, even though the latter expanded less nodes and
-performed fewer goal tests. This is due to the complexity of constructing the planning
-graph.
+performed fewer goal tests. The reason for this is that the construction of the planning
+graph that is required for the 'Levelsum' heuristic is very time consuming. Precisely
+it requires $O(n(a+l)^2)$ operations, where $n$ is the number of levels the graph has,
+$a$ ist the number of actions and $l$ is the number of literals. \cite{AIMA}\\
 Compared to the non-heuristic searches, 'Ignore Preconditions' was slower only compared
 to Depth First Search. For problem 1 Breadth First and Uniform Cost Search required
 similar time, but for the other two problems they were outperformed. The explanation
@@ -54,7 +59,9 @@ all non-trivial problems.
 The results of solving the three air cargo problems using Breadth First Search,
 Depth First Search, Uniform Cost Search and A-Star Search with the 'Ignore Preconditions'
 and 'Levelsum' heuristics follow. \\
-For each problem one optimal solution
+For each problem one optimal solution is provided. Please note that there is more than
+one optimal solution to each of the problems.
+\newpage
 
 \subsection*{Problem 1}
 $
@@ -73,7 +80,7 @@ $ \\
     A* [Ignore Preconditions]   & 41          & 43          & 170         & 6   & 0.04  \\ \hline
     A* [Levelsum]               & 11          & 13          & 50          & 6   & 0.77  \\ \hline
   \end{tabular}
-\end{center} \\
+\end{center} \\ \\
 
 \subsection*{Problem 2}
 $
@@ -118,4 +125,8 @@ $ \\
   \end{tabular}
 \end{center} \\ \\
 
+\begin{thebibliography}{1}
+\bibitem[Russel and Norvig (2010)]{AIMA} Stuart Russel and Peter Norvig {\em Artificial Intelligence - A Modern
+Approach 3rd Edition} 2010.
+\end{thebibliography}
 \end{document}

@@ -1,0 +1,104 @@
+\documentclass{article}
+    % General document formatting
+    \usepackage[margin=0.7in]{geometry}
+    \usepackage[parfill]{parskip}
+    \usepackage[utf8]{inputenc}
+    \usepackage{graphicx}
+    \usepackage{fancyhdr}
+
+    % Related to math
+    \usepackage{amsmath,amssymb,amsfonts,amsthm}
+
+    % Page Style
+    \pagestyle{fancy}
+    \fancyhf{}
+    \rhead{Johannes Stricker}
+    \lhead{Artificial Intelligence: Create A Domain-Independent Planner - Research Review}
+    \cfoot{\thepage}
+
+\begin{document}
+
+With this essay a brief overview on the history of AI planning and search between the
+1970's and early 2000's is presented and differences between Partial Order Planning
+and State Space Planning are explained.
+
+\section*{The history of AI planning and search}
+In 1971 Richard E. Fikes and Nils J. Nilsson released a paper titled 'STRIPS: A New
+Approach to the Application of Theorem Proving to Problem Solving', which up until
+today layed the foundation for most of the research in the field of AI planning
+and search.\\
+It was the first time that a problem solving model was described using a language
+of operators with pre- and postconditions, that operate on the world model. The
+idea behind STRIPS was to search for ``some composition of operators that transforms a
+given world model into one that satisfies some stated goal condition.`` \cite{STRIPS}
+Instead of exploring the complete space of operator combinations - which would grow
+too large too quickly even for simple problems - the idea behind STRIPS is to identify
+operators that reduce the difference between the current world state and the goal state.
+To identify such operators, STRIPS already used heuristic evaluation functions such
+as the number of remaining goals.
+When an operator has been found, the subproblem of getting to a world state that
+satisfies the operators preconditions has to be solved. This process is then applied
+iteratively, until all goals have been satisfied.
+
+\\\\
+
+The work of Fikes and Nilsson built the basis for many domain-independent planning
+algorithms that were developed between 1971 and the 90's: HACKER, INTERPLAN, NOAH
+and TWEAK, just to name a few. \cite{chapman87}
+Except for the addition of constraints, none of the above approaches improved STRIPS in any significant
+way, though. \cite{chapman87} They were all based on the idea of Partial Order Planning, which
+is to find a plan that satisfies all goal requirements, but does not specify an
+exact order of actions where it is not required. Partial Order Planners work by searching
+for a solution among the set of partial-order plans. This makes sense, because sub-problems
+are often independent of each other.
+In 1997 Avrim L. Blum and Merrick L. Furst developed a novel approach to solving planning problems
+that was based on a structure called Planning Graph. \cite{blum97} The algorithm first
+creates a graph structure from the problem at hand, that can then be used for heuristic evaluations
+and to search for a partial-order plan.
+While Partial Order Planning algorithms have several benefits - e.g. being easier to parallelize - faster methods
+emerged in the late 90's, such as State Space Planners and Constraint Satisfaction Solvers,
+so that Partial Order Planning received less attention. \cite{AIMA}
+
+\\\\
+
+After the hype around Partial Order Planning, the interest in State Space Planning rose with the release of Drew McDermott's UnPOP
+program in 1996, which was successively improved upon by several other projects. One of them was the Heuristic
+Search Planner (HSP) that was developed by Bonet and Geffner in 1999.
+The idea was similar to preceding work in the field: to have a general mechanism to extract heuristics and a general program
+that is able to solve problems domain-independently while being competitive even with domain-specific solvers. \cite{bonet00}
+Contrary to searching a solution among the set of partial-order plans, State Space Planners
+search among the set of world states, though. Nonetheless the algorithm presented by Bonet and Geffner, as well
+as most others, were still using the initial formulation of the STRIPS encoding.
+The authors themselves critized however, that ``few real problems can actually be
+encoded efficiently in Strips`` \cite{bonet00} and proposed to make use of richer
+problem representations in the future.
+
+\\\\
+
+With the new millenial, Partial Order Planning received some attention again. The RePOP
+algorithm incorporated novel heuristics that were also used in State Space Planning
+in order to improve upon UCPOP from 1992. The evaluation showed that RePOP performed well
+in parallel planning domains, but had unsatisfactory performance in serial domains. \cite{nguyen01}
+
+
+\begin{thebibliography}{1}
+\bibitem[Yikes and Nilsson (1971)]{STRIPS} Richard E. Yikes and Nils J. Nilsson {\em STRIPS: A New Approach
+to the Application of Theorem Proving to Problem Solving}  1971.
+
+\bibitem[Chapman (1987)]{chapman87} David Chapman {\em Planning for Conjunctive Goals} 1987.
+
+% \bibitem[Penberthy and Wed (1992)]{UCPOP} J. Scott Penberthy and Daniel S. Weld {\em UCPOP: A Sound, Complete,
+% Partial Order Planner for ADL} 1992.
+
+\bibitem[Bonet and Geffner (2000)]{bonet00} Blai Bonet and Hector Geffner {\em Planning as heuristic search} 2000.
+
+\bibitem[Nguyen and Kambhampati (2001)]{nguyen01} XuanLong Nguyen and Subbarao Kambhampati {\em Reviving Partial
+Order Planning} 2001.
+
+\bibitem[Russel and Norvig (2010)]{AIMA} Stuart Russel and Peter Norvig {\em Artificial Intelligence - A Modern
+Approach 3rd Edition} 2010.
+
+\bibitem[Blum and Furst (1997)]{blum97} Avrim L. Blum and Merrick L. Furst {\em Fast Planning Through Planning Graph
+Analysis} 1997.
+\end{thebibliography}
+\end{document}

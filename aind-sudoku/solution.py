@@ -5,27 +5,54 @@ assignments = []
 
 # Set constants.
 LETTERS = 'ABCDEFGHI'
-DIGITS  = '123456789'
+DIGITS = '123456789'
 SIZE = len(LETTERS)
+
 
 def cross(A, B):
     "Cross product of elements in A and elements in B."
     return [a + b for a in A for b in B]
 
-# Calculate units.
-BOXES = cross(LETTERS,DIGITS)
-SQUARES = [ cross(LETTERS[i:i+3],DIGITS[j:j+3]) for i in range(0, len(LETTERS), 3) for j in range(0, len(DIGITS), 3) ]
-DIAGONALS = [[letter + digit for letter, digit in zip(LETTERS, DIGITS)], [letter + digit for letter, digit in zip(LETTERS[::-1], DIGITS)]]
-UNITS = [cross(r,DIGITS) for r in LETTERS] + [cross(LETTERS,c) for c in DIGITS] + SQUARES + DIAGONALS
 
+# Calculate units.
+BOXES = cross(LETTERS, DIGITS)
+SQUARES = [
+    cross(LETTERS[i:i + 3], DIGITS[j:j + 3])
+    for i in range(0, len(LETTERS), 3) for j in range(0, len(DIGITS), 3)
+]
+DIAGONALS = [[letter + digit for letter, digit in zip(LETTERS, DIGITS)],
+             [letter + digit for letter, digit in zip(LETTERS[::-1], DIGITS)]]
+UNITS = [cross(r, DIGITS)
+         for r in LETTERS] + [cross(LETTERS, c)
+                              for c in DIGITS] + SQUARES + DIAGONALS
 # Calculate peers.
 ROW_PEERS = {box: cross(box[0], DIGITS.replace(box[1], '')) for box in BOXES}
 COL_PEERS = {box: cross(LETTERS.replace(box[0], ''), box[1]) for box in BOXES}
-SQUARE_PEERS = {box: list(filter(lambda x: x != box, square)) for square in SQUARES for box in square}
-FIRST_DIAGONAL_PEERS = {box: list(filter(lambda x: x != box, DIAGONALS[0])) for box in DIAGONALS[0]}
-SECOND_DIAGONAL_PEERS = {box: list(filter(lambda x: x != box, DIAGONALS[1])) for box in DIAGONALS[1]}
-DIAGONAL_PEERS = {box: FIRST_DIAGONAL_PEERS.setdefault(box, []) + SECOND_DIAGONAL_PEERS.setdefault(box, []) for box in BOXES}
-PEERS = {box: list(set(ROW_PEERS[box] + COL_PEERS[box] + SQUARE_PEERS[box] + DIAGONAL_PEERS[box])) for box in BOXES}
+SQUARE_PEERS = {
+    box: list(filter(lambda x: x != box, square))
+    for square in SQUARES for box in square
+}
+FIRST_DIAGONAL_PEERS = {
+    box: list(filter(lambda x: x != box, DIAGONALS[0]))
+    for box in DIAGONALS[0]
+}
+SECOND_DIAGONAL_PEERS = {
+    box: list(filter(lambda x: x != box, DIAGONALS[1]))
+    for box in DIAGONALS[1]
+}
+DIAGONAL_PEERS = {
+    box: FIRST_DIAGONAL_PEERS.setdefault(box, []) +
+    SECOND_DIAGONAL_PEERS.setdefault(box, [])
+    for box in BOXES
+}
+PEERS = {
+    box: list(
+        set(ROW_PEERS[box] + COL_PEERS[box] + SQUARE_PEERS[box] +
+            DIAGONAL_PEERS[box]))
+    for box in BOXES
+}
+something = {'name': 'something', 'someother': 'somenew'}
+
 
 def assign_value(values, box, value):
     """
@@ -42,6 +69,7 @@ def assign_value(values, box, value):
         assignments.append(values.copy())
     return values
 
+
 def naked_twins(values):
     """Eliminate values using the naked twins strategy.
     Args:
@@ -52,15 +80,20 @@ def naked_twins(values):
     """
     for unit in UNITS:
         # Identify naked twins.
-        boxes = {box:values[box] for box in unit if len(values[box]) == 2}
-        nakedTwins = set(value for box,value in boxes.items() if list(boxes.values()).count(value) == 2)
+        boxes = {box: values[box] for box in unit if len(values[box]) == 2}
+        nakedTwins = set(value for box, value in boxes.items()
+                         if list(boxes.values()).count(value) == 2)
 
         # Remove naked twins from other boxes in the same unit.
         for box in unit:
             if values[box] not in nakedTwins:
-                val = ''.join([x for x in values[box] if x not in ''.join(list(nakedTwins))])
+                val = ''.join([
+                    x for x in values[box]
+                    if x not in ''.join(list(nakedTwins))
+                ])
                 assign_value(values, box, val)
     return values
+
 
 def grid_values(grid):
     """
@@ -72,7 +105,11 @@ def grid_values(grid):
             Keys: The boxes, e.g., 'A1'
             Values: The value in each box, e.g., '8'. If the box has no value, then the value will be '123456789'.
     """
-    return {BOXES[idx]: grid[idx].replace('.', DIGITS) for idx in range(len(grid))}
+    return {
+        BOXES[idx]: grid[idx].replace('.', DIGITS)
+        for idx in range(len(grid))
+    }
+
 
 def display(values):
     """
@@ -90,7 +127,8 @@ def display(values):
 
     # Display column header.
     output = rowSeperator
-    output += ' | ' + ' | '.join([c.center(boxwidth) for c in ' ' + DIGITS]) + ' | \n'
+    output += ' | ' + ' | '.join([c.center(boxwidth)
+                                  for c in ' ' + DIGITS]) + ' | \n'
     output += rowSeperator
 
     for r in LETTERS:
@@ -99,12 +137,13 @@ def display(values):
 
         # Display boxes.
         for c in DIGITS:
-            box = r+c
+            box = r + c
             output += values[box].center(boxwidth)
             output += ' | '
 
         output += '\n' + rowSeperator
     print(output)
+
 
 def eliminate(values):
     """
@@ -115,12 +154,13 @@ def eliminate(values):
         The reduced sudoku in dictionary form.
     """
     # Find all boxes that have been solved.
-    solvedValues = {k:v for k,v in values.items() if len(v) == 1}
+    solvedValues = {k: v for k, v in values.items() if len(v) == 1}
     for box, val in solvedValues.items():
         # Remove the box solution for all it's peers.
         for peer in PEERS[box]:
             values = assign_value(values, peer, values[peer].replace(val, ''))
     return values
+
 
 def only_choice(values):
     """
@@ -139,6 +179,7 @@ def only_choice(values):
                 values = assign_value(values, choices[0], digit)
     return values
 
+
 def reduce_puzzle(values):
     """
     Repeatedly apply elimination, only_choice and naked_twins until there is no more progress.
@@ -150,18 +191,21 @@ def reduce_puzzle(values):
     progress = True
     while progress:
         # Count the number of currently solved boxes.
-        solved_boxes_before = len([val for val in values.values() if len(val) == 1])
+        solved_boxes_before = len(
+            [val for val in values.values() if len(val) == 1])
         # Apply elimination, naked_twins and only_choice.
         values = eliminate(values)
         values = naked_twins(values)
         values = only_choice(values)
         # If no boxes have been solved this iteration then abort.
-        solved_boxes_after = len([val for val in values.values() if len(val) == 1])
+        solved_boxes_after = len(
+            [val for val in values.values() if len(val) == 1])
         progress = solved_boxes_before != solved_boxes_after
         # Check if we removed an invalid field and end up with no possible solution.
         if list(values.values()).count('') > 0:
             return False
     return values
+
 
 def search(values):
     """
@@ -181,7 +225,7 @@ def search(values):
         return values
     # Find the box with the least possible solutions.
     boxesNotSolved = filter(lambda t: len(t[1]) > 1, values.items())
-    box,n = min(boxesNotSolved, key=lambda t: len(t[1]))
+    box, n = min(boxesNotSolved, key=lambda t: len(t[1]))
     # And try to solve each of them.
     for digit in values[box]:
         valuesCopy = values.copy()
@@ -190,6 +234,7 @@ def search(values):
         if solution is not False:
             return solution
     return False
+
 
 def solve(grid):
     """
@@ -208,18 +253,23 @@ def solve(grid):
             return False
     return values
 
+
 def assertCorrectSolution(solution):
     """
     Asserts that a solution contains no duplicates within units.
     Args:
         solution(dict): The solved sudoku in dictionary form.
     """
-    assert(solution != False)
+    assert (solution != False)
     for unit in UNITS:
         # Check for duplicates within the unit.
         for box in unit:
-            duplicates = [peer for peer in unit if box != peer and solution[peer] == solution[box]]
-            assert(len(duplicates) == 0)
+            duplicates = [
+                peer for peer in unit
+                if box != peer and solution[peer] == solution[box]
+            ]
+            assert (len(duplicates) == 0)
+
 
 if __name__ == '__main__':
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
@@ -238,4 +288,6 @@ if __name__ == '__main__':
     except SystemExit:
         pass
     except:
-        print('We could not visualize your board due to a pygame issue. Not a problem! It is not a requirement.')
+        print(
+            'We could not visualize your board due to a pygame issue. Not a problem! It is not a requirement.'
+        )
