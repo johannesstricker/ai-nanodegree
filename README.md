@@ -31,7 +31,7 @@ Using 'Constraint Satisfaction'.
 ### Planning Search
 Using 'State Space Planning', 'Partial Order Planning' and 'Planning Graphs'.
 
-<img src="01_foundations-of-ai/06_planning/images/progression.png" width="400">
+<img src="01_foundations-of-ai/06_planning/preview.png" width="400">
 
 ### Sign Language Recognition
 Using 'Hidden Markov Models'.
