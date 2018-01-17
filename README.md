@@ -3,49 +3,49 @@ Solutions to the Nanodegree's projects.
 
 ## Foundations Of AI
 
-### Project 01: Sudoku Solver
+### Sudoku Solver
 Using constraint propagation and depth first search.
 
 <img src="01_foundations-of-ai/01_sudoku/viz.gif" width="400">
 
-### Project 02: Isolation Game Agent
+### Isolation Game Agent
 Using the minimax algorithm with alpha-beta pruning.
 
 <img src="01_foundations-of-ai/02_isolation/viz.gif" width="400">
 
-### Lab 01: Teaching Pac-Man
+### Teaching Pac-Man
 Using 'Breadth First Search', 'Uniform Cost Search' and 'A* Search'.
 
 <img src="01_foundations-of-ai/03_pacman/pacman.gif" width="400">
 
-### Lab 02: Travelling Salesmen
+### Travelling Salesmen
 Using 'Simulated Annealing' to approximate a solution.
 
 <img src="01_foundations-of-ai/04_travelling-salesmen/solution.png" width="400">
 
-### Lab 03: N-Queens
+### N-Queens
 Using 'Constraint Satisfaction'.
 
 <img src="01_foundations-of-ai/05_nqueens/solution.png" width="400">
 
-### Project 03: Planning
+### Planning Search
 Using 'State Space Planning', 'Partial Order Planning' and 'Planning Graphs'.
 
 <img src="01_foundations-of-ai/06_planning/images/progression.png" width="400">
 
-### Project 04: Sign Language Recognition
+### Sign Language Recognition
 Using 'Hidden Markov Models'.
 
 <img src="01_foundations-of-ai/07_asl/preview.jpg" width="400">
 
 ## Deep Learning And Applications
 
-### Project 01: Dog Breed Detection
+### Dog Breed Classification
 Using 'Convolutional Neural Networks'.
 
 <img src="02_deep-learning-and-applications/01_dog-breed/preview.jpg" width="400">
 
-### Project 02: Time Series Prediction & Text Generation
+### Time Series Prediction & Text Generation
 Using 'Recurrent Neural Networks'.
 
 <img src="02_deep-learning-and-applications/02_rnn/preview.png" width="400">
